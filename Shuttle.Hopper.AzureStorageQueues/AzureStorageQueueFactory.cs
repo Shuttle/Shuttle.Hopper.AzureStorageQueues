@@ -7,8 +7,8 @@ namespace Shuttle.Hopper.AzureStorageQueues;
 public class AzureStorageQueueFactory(IOptions<ServiceBusOptions> serviceBusOptions, IOptionsMonitor<AzureStorageQueueOptions> azureStorageQueueOptions)
     : ITransportFactory
 {
-    private readonly ServiceBusOptions _serviceBusOptions = Guard.AgainstNull(Guard.AgainstNull(serviceBusOptions).Value);
     private readonly IOptionsMonitor<AzureStorageQueueOptions> _azureStorageQueueOptions = Guard.AgainstNull(azureStorageQueueOptions);
+    private readonly ServiceBusOptions _serviceBusOptions = Guard.AgainstNull(Guard.AgainstNull(serviceBusOptions).Value);
 
     public async Task<ITransport> CreateAsync(Uri uri, CancellationToken cancellationToken = default)
     {

@@ -7,41 +7,44 @@ namespace Shuttle.Hopper.AzureStorageQueues;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddAzureStorageQueues(this IServiceCollection services, Action<AzureStorageQueueBuilder>? builder = null)
+    extension(IServiceCollection services)
     {
-        Guard.AgainstNull(services);
-
-        var azureStorageQueueBuilder = new AzureStorageQueueBuilder(services);
-
-        builder?.Invoke(azureStorageQueueBuilder);
-
-        services.AddSingleton<IValidateOptions<AzureStorageQueueOptions>, AzureStorageQueueOptionsValidator>();
-
-        foreach (var pair in azureStorageQueueBuilder.AzureStorageQueueOptions)
+        public IServiceCollection AddAzureStorageQueues(Action<AzureStorageQueueBuilder>? builder = null)
         {
-            services.AddOptions<AzureStorageQueueOptions>(pair.Key).Configure(options =>
+            Guard.AgainstNull(services);
+
+            var azureStorageQueueBuilder = new AzureStorageQueueBuilder(services);
+
+            builder?.Invoke(azureStorageQueueBuilder);
+
+            services.AddSingleton<IValidateOptions<AzureStorageQueueOptions>, AzureStorageQueueOptionsValidator>();
+
+            foreach (var pair in azureStorageQueueBuilder.AzureStorageQueueOptions)
             {
-                options.StorageAccount = pair.Value.StorageAccount;
-                options.ConnectionString = pair.Value.ConnectionString;
-                options.VisibilityTimeout = pair.Value.VisibilityTimeout;
-                options.MaxMessages = pair.Value.MaxMessages;
-
-                if (options.MaxMessages < 1)
+                services.AddOptions<AzureStorageQueueOptions>(pair.Key).Configure(options =>
                 {
-                    options.MaxMessages = 1;
-                }
+                    options.StorageAccount = pair.Value.StorageAccount;
+                    options.ConnectionString = pair.Value.ConnectionString;
+                    options.VisibilityTimeout = pair.Value.VisibilityTimeout;
+                    options.MaxMessages = pair.Value.MaxMessages;
 
-                if (options.MaxMessages > 32)
-                {
-                    options.MaxMessages = 32;
-                }
+                    if (options.MaxMessages < 1)
+                    {
+                        options.MaxMessages = 1;
+                    }
 
-                options.Configure = pair.Value.Configure;
-            });
+                    if (options.MaxMessages > 32)
+                    {
+                        options.MaxMessages = 32;
+                    }
+
+                    options.Configure = pair.Value.Configure;
+                });
+            }
+
+            services.TryAddSingleton<ITransportFactory, AzureStorageQueueFactory>();
+
+            return services;
         }
-
-        services.TryAddSingleton<ITransportFactory, AzureStorageQueueFactory>();
-
-        return services;
     }
 }
