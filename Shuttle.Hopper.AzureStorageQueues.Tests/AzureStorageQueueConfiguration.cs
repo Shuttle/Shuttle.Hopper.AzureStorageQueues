@@ -20,13 +20,6 @@ public static class AzureStorageQueueConfiguration
                 VisibilityTimeout = null
             };
 
-            azureStorageQueueOptions.Configure += (eventArgs, _) =>
-            {
-                Console.WriteLine($@"[event] : Configure / Uri = '{eventArgs.TransportUri.Uri}'");
-
-                return Task.CompletedTask;
-            };
-
             builder.AddOptions("azure", azureStorageQueueOptions);
         });
 

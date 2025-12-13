@@ -23,11 +23,12 @@ public static class ServiceCollectionExtensions
             {
                 services.AddOptions<AzureStorageQueueOptions>(pair.Key).Configure(options =>
                 {
+                    options.QueueClientOptions = pair.Value.QueueClientOptions;
                     options.StorageAccount = pair.Value.StorageAccount;
                     options.ConnectionString = pair.Value.ConnectionString;
                     options.VisibilityTimeout = pair.Value.VisibilityTimeout;
                     options.MaxMessages = pair.Value.MaxMessages;
-
+                    
                     if (options.MaxMessages < 1)
                     {
                         options.MaxMessages = 1;
@@ -37,8 +38,6 @@ public static class ServiceCollectionExtensions
                     {
                         options.MaxMessages = 32;
                     }
-
-                    options.Configure = pair.Value.Configure;
                 });
             }
 

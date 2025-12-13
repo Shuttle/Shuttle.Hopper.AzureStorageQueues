@@ -19,7 +19,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
     private readonly Queue<ReceivedMessage> _receivedMessages = new();
     private readonly ServiceBusOptions _serviceBusOptions;
 
-    public AzureStorageQueue(ServiceBusOptions serviceBusOptions, AzureStorageQueueOptions azureStorageQueueOptions, QueueClientOptions queueClientOptions, TransportUri uri)
+    public AzureStorageQueue(ServiceBusOptions serviceBusOptions, AzureStorageQueueOptions azureStorageQueueOptions, TransportUri uri)
     {
         _serviceBusOptions = Guard.AgainstNull(serviceBusOptions);
         _azureStorageQueueOptions = Guard.AgainstNull(azureStorageQueueOptions);
@@ -28,7 +28,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         if (!string.IsNullOrWhiteSpace(_azureStorageQueueOptions.ConnectionString))
         {
-            _queueClient = new(_azureStorageQueueOptions.ConnectionString, Uri.TransportName, queueClientOptions);
+            _queueClient = new(_azureStorageQueueOptions.ConnectionString, Uri.TransportName, azureStorageQueueOptions.QueueClientOptions ?? new QueueClientOptions());
         }
 
         if (!string.IsNullOrWhiteSpace(_azureStorageQueueOptions.StorageAccount))

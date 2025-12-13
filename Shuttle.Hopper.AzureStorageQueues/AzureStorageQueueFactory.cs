@@ -20,11 +20,7 @@ public class AzureStorageQueueFactory(IOptions<ServiceBusOptions> serviceBusOpti
             throw new InvalidOperationException(string.Format(Hopper.Resources.TransportConfigurationNameException, transportUri.ConfigurationName));
         }
 
-        var queueClientOptions = new QueueClientOptions();
-
-        await azureStorageQueueOptions.Configure.InvokeAsync(new(azureStorageQueueOptions, queueClientOptions, transportUri), cancellationToken);
-
-        return new AzureStorageQueue(_serviceBusOptions, azureStorageQueueOptions, queueClientOptions, transportUri);
+        return new AzureStorageQueue(_serviceBusOptions, azureStorageQueueOptions, transportUri);
     }
 
     public string Scheme => "azuresq";
