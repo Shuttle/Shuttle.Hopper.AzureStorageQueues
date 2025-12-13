@@ -25,9 +25,11 @@ services.AddAzureStorageQueues(builder =>
         VisibilityTimeout = null
     };
 
-    azureStorageQueueOptions.Configure += (sender, args) =>
+    azureStorageQueueOptions.Configure += (eventArgs, cancellationToken) =>
     {
-        Console.WriteLine($"[event] : Configure / Uri = '{((IQueue)sender).Uri}'");
+        Console.WriteLine($@"[event] : Configure / Uri = '{eventArgs.TransportUri.Uri}'");
+
+        return Task.CompletedTask;
     };
 
     builder.AddOptions("azure", azureStorageQueueOptions);
