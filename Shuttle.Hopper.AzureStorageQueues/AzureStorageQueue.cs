@@ -148,7 +148,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/cancelled]", true), cancellationToken);
+            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/cancelled]", false), cancellationToken);
         }
         finally
         {
