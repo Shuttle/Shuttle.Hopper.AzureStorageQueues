@@ -28,7 +28,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         if (!string.IsNullOrWhiteSpace(_azureStorageQueueOptions.ConnectionString))
         {
-            _queueClient = new(_azureStorageQueueOptions.ConnectionString, Uri.TransportName, azureStorageQueueOptions.QueueClientOptions ?? new QueueClientOptions());
+            _queueClient = new(_azureStorageQueueOptions.ConnectionString, Uri.TransportName, azureStorageQueueOptions.QueueClient ?? new QueueClientOptions());
         }
 
         if (!string.IsNullOrWhiteSpace(_azureStorageQueueOptions.StorageAccount))
@@ -66,7 +66,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[drop/starting]"), cancellationToken);
+        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[delete/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -76,14 +76,14 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[drop/cancelled]"), cancellationToken);
+            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[delete/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
 
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[drop/completed]"), cancellationToken);
+        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[delete/completed]"), cancellationToken);
     }
 
     public void Dispose()
@@ -291,7 +291,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[enqueue/cancelled]"), cancellationToken);
+            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[send/cancelled]"), cancellationToken);
         }
         finally
         {

@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
             {
                 services.AddOptions<AzureStorageQueueOptions>(pair.Key).Configure(options =>
                 {
-                    options.QueueClientOptions = pair.Value.QueueClientOptions;
+                    options.QueueClient = pair.Value.QueueClient;
                     options.StorageAccount = pair.Value.StorageAccount;
                     options.ConnectionString = pair.Value.ConnectionString;
                     options.VisibilityTimeout = pair.Value.VisibilityTimeout;
