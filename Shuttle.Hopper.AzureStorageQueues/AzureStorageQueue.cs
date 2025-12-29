@@ -286,8 +286,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         try
         {
             await _queueClient.SendMessageAsync(Convert.ToBase64String(await stream.ToBytesAsync().ConfigureAwait(false)), null, _infiniteTimeToLive, cancellationToken).ConfigureAwait(false);
-
-            await _serviceBusOptions.MessageSent.InvokeAsync(new(this, transportMessage, stream), cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -297,6 +295,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             _lock.Release();
         }
+
+        await _serviceBusOptions.MessageSent.InvokeAsync(new(this, transportMessage, stream), cancellationToken);
     }
 
     public TransportType Type => TransportType.Queue;

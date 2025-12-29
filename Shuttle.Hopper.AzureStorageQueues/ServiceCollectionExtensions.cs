@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
                 });
             }
 
-            services.TryAddSingleton<ITransportFactory, AzureStorageQueueFactory>();
+            services.AddSingleton<ITransportFactory, AzureStorageQueueFactory>();
 
             return services;
         }
