@@ -3,11 +3,11 @@ using Shuttle.Core.Contract;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
-public class AzureStorageQueueFactory(IOptions<ServiceBusOptions> serviceBusOptions, IOptionsMonitor<AzureStorageQueueOptions> azureStorageQueueOptions)
+public class AzureStorageQueueFactory(IOptions<HopperOptions> hopperOptions, IOptionsMonitor<AzureStorageQueueOptions> azureStorageQueueOptions)
     : ITransportFactory
 {
     private readonly IOptionsMonitor<AzureStorageQueueOptions> _azureStorageQueueOptions = Guard.AgainstNull(azureStorageQueueOptions);
-    private readonly ServiceBusOptions _serviceBusOptions = Guard.AgainstNull(Guard.AgainstNull(serviceBusOptions).Value);
+    private readonly HopperOptions _hopperOptions = Guard.AgainstNull(Guard.AgainstNull(hopperOptions).Value);
 
     public Task<ITransport> CreateAsync(Uri uri, CancellationToken cancellationToken = default)
     {
@@ -19,7 +19,7 @@ public class AzureStorageQueueFactory(IOptions<ServiceBusOptions> serviceBusOpti
             throw new InvalidOperationException(string.Format(Hopper.Resources.TransportConfigurationNameException, transportUri.ConfigurationName));
         }
 
-        return Task.FromResult<ITransport>(new AzureStorageQueue(_serviceBusOptions, azureStorageQueueOptions, transportUri));
+        return Task.FromResult<ITransport>(new AzureStorageQueue(_hopperOptions, azureStorageQueueOptions, transportUri));
     }
 
     public string Scheme => "azuresq";

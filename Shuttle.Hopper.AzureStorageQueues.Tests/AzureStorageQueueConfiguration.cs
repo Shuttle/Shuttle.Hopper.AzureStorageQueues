@@ -11,16 +11,19 @@ public static class AzureStorageQueueConfiguration
 
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 
-        services.AddAzureStorageQueues(builder =>
+        services.AddHopper(hopperBuilder =>
         {
-            var azureStorageQueueOptions = new AzureStorageQueueOptions
+            hopperBuilder.UseAzureStorageQueues(builder =>
             {
-                ConnectionString = "UseDevelopmentStorage=true",
-                MaxMessages = 20,
-                VisibilityTimeout = null
-            };
+                var azureStorageQueueOptions = new AzureStorageQueueOptions
+                {
+                    ConnectionString = "UseDevelopmentStorage=true",
+                    MaxMessages = 20,
+                    VisibilityTimeout = null
+                };
 
-            builder.AddOptions("azure", azureStorageQueueOptions);
+                builder.AddOptions("azure", azureStorageQueueOptions);
+            });
         });
 
         return services;

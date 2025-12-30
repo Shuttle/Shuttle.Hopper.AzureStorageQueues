@@ -17,11 +17,11 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     private readonly QueueClient _queueClient;
     private readonly Queue<ReceivedMessage> _receivedMessages = new();
-    private readonly ServiceBusOptions _serviceBusOptions;
+    private readonly HopperOptions _hopperOptions;
 
-    public AzureStorageQueue(ServiceBusOptions serviceBusOptions, AzureStorageQueueOptions azureStorageQueueOptions, TransportUri uri)
+    public AzureStorageQueue(HopperOptions hopperOptions, AzureStorageQueueOptions azureStorageQueueOptions, TransportUri uri)
     {
-        _serviceBusOptions = Guard.AgainstNull(serviceBusOptions);
+        _hopperOptions = Guard.AgainstNull(hopperOptions);
         _azureStorageQueueOptions = Guard.AgainstNull(azureStorageQueueOptions);
 
         Uri = Guard.AgainstNull(uri);
@@ -44,7 +44,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public async Task CreateAsync(CancellationToken cancellationToken = default)
     {
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[create/starting]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[create/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -54,19 +54,19 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[create/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[create/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
 
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[create/completed]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[create/completed]"), cancellationToken);
     }
 
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[delete/starting]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[delete/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -76,14 +76,14 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[delete/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[delete/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
 
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[delete/completed]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[delete/completed]"), cancellationToken);
     }
 
     public void Dispose()
@@ -112,7 +112,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public async Task PurgeAsync(CancellationToken cancellationToken = default)
     {
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[purge/starting]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[purge/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -122,19 +122,19 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[purge/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[purge/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
 
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[purge/completed]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[purge/completed]"), cancellationToken);
     }
 
     public async ValueTask<bool> HasPendingAsync(CancellationToken cancellationToken = default)
     {
-        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/starting]"), cancellationToken);
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -142,13 +142,13 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             var result = ((QueueProperties)await _queueClient.GetPropertiesAsync(cancellationToken).ConfigureAwait(false)).ApproximateMessagesCount > 0;
 
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[has-pending]", result), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending]", result), cancellationToken);
 
             return result;
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/cancelled]", false), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/cancelled]", false), cancellationToken);
         }
         finally
         {
@@ -174,7 +174,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
                 }
                 catch (OperationCanceledException)
                 {
-                    await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[receive/cancelled]"), cancellationToken);
+                    await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[receive/cancelled]"), cancellationToken);
                 }
 
                 if (messages == null || messages.Value.Length == 0)
@@ -188,7 +188,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
                     if (_acknowledgementTokens.Remove(acknowledgementToken.MessageId))
                     {
-                        await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[receive/refreshed]", acknowledgementToken.MessageId), cancellationToken);
+                        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[receive/refreshed]", acknowledgementToken.MessageId), cancellationToken);
                     }
 
                     _acknowledgementTokens.Add(acknowledgementToken.MessageId, acknowledgementToken);
@@ -201,14 +201,14 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
             if (receivedMessage != null)
             {
-                await _serviceBusOptions.MessageReceived.InvokeAsync(new(this, receivedMessage), cancellationToken);
+                await _hopperOptions.MessageReceived.InvokeAsync(new(this, receivedMessage), cancellationToken);
             }
 
             return receivedMessage;
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[receive/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[receive/cancelled]"), cancellationToken);
         }
         finally
         {
@@ -232,11 +232,11 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
             await _queueClient.SendMessageAsync(data.MessageText, cancellationToken).ConfigureAwait(false);
             await _queueClient.DeleteMessageAsync(data.MessageId, data.PopReceipt, cancellationToken).ConfigureAwait(false);
 
-            await _serviceBusOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
+            await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[release/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[release/cancelled]"), cancellationToken);
         }
         finally
         {
@@ -262,11 +262,11 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             await _queueClient.DeleteMessageAsync(data.MessageId, data.PopReceipt, cancellationToken).ConfigureAwait(false);
 
-            await _serviceBusOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
+            await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[acknowledge/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[acknowledge/cancelled]"), cancellationToken);
         }
         finally
         {
@@ -289,14 +289,14 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         }
         catch (OperationCanceledException)
         {
-            await _serviceBusOptions.TransportOperation.InvokeAsync(new(this, "[send/cancelled]"), cancellationToken);
+            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[send/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
 
-        await _serviceBusOptions.MessageSent.InvokeAsync(new(this, transportMessage, stream), cancellationToken);
+        await _hopperOptions.MessageSent.InvokeAsync(new(this, transportMessage, stream), cancellationToken);
     }
 
     public TransportType Type => TransportType.Queue;

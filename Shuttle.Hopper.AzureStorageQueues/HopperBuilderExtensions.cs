@@ -1,16 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Shuttle.Core.Contract;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
-public static class ServiceCollectionExtensions
+public static class HopperBuilderExtensions
 {
-    extension(IServiceCollection services)
+    extension(HopperBuilder hopperBuilder)
     {
-        public IServiceCollection AddAzureStorageQueues(Action<AzureStorageQueueBuilder>? builder = null)
+        public IServiceCollection UseAzureStorageQueues(Action<AzureStorageQueueBuilder>? builder = null)
         {
-            Guard.AgainstNull(services);
+            var services = hopperBuilder.Services;
 
             var azureStorageQueueBuilder = new AzureStorageQueueBuilder(services);
 
