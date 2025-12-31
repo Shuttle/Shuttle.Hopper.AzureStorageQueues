@@ -7,7 +7,7 @@ public static class HopperBuilderExtensions
 {
     extension(HopperBuilder hopperBuilder)
     {
-        public IServiceCollection UseAzureStorageQueues(Action<AzureStorageQueueBuilder>? builder = null)
+        public HopperBuilder UseAzureStorageQueues(Action<AzureStorageQueueBuilder>? builder = null)
         {
             var services = hopperBuilder.Services;
 
@@ -41,7 +41,7 @@ public static class HopperBuilderExtensions
 
             services.AddSingleton<ITransportFactory, AzureStorageQueueFactory>();
 
-            return services;
+            return hopperBuilder;
         }
     }
 }
