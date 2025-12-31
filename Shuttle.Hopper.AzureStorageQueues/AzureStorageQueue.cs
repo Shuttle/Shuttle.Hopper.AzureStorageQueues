@@ -52,10 +52,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             await _queueClient.CreateIfNotExistsAsync(null, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[create/cancelled]"), cancellationToken);
-        }
         finally
         {
             _lock.Release();
@@ -73,10 +69,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         try
         {
             await _queueClient.DeleteIfExistsAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[delete/cancelled]"), cancellationToken);
         }
         finally
         {
@@ -120,10 +112,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             await _queueClient.ClearMessagesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[purge/cancelled]"), cancellationToken);
-        }
         finally
         {
             _lock.Release();
@@ -138,44 +126,33 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
+        bool result;
+
         try
         {
-            var result = ((QueueProperties)await _queueClient.GetPropertiesAsync(cancellationToken).ConfigureAwait(false)).ApproximateMessagesCount > 0;
-
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending]", result), cancellationToken);
-
-            return result;
-        }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/cancelled]", false), cancellationToken);
+            result = ((QueueProperties)await _queueClient.GetPropertiesAsync(cancellationToken).ConfigureAwait(false)).ApproximateMessagesCount > 0;
         }
         finally
         {
             _lock.Release();
         }
 
-        return true;
+        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending]", result), cancellationToken);
+
+        return result;
     }
 
     public async Task<ReceivedMessage?> ReceiveAsync(CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
+        ReceivedMessage? receivedMessage;
+
         try
         {
             if (_receivedMessages.Count == 0)
             {
-                Response<QueueMessage[]>? messages = null;
-
-                try
-                {
-                    messages = await _queueClient.ReceiveMessagesAsync(_azureStorageQueueOptions.MaxMessages, _azureStorageQueueOptions.VisibilityTimeout, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[receive/cancelled]"), cancellationToken);
-                }
+                Response<QueueMessage[]>? messages = await _queueClient.ReceiveMessagesAsync(_azureStorageQueueOptions.MaxMessages, _azureStorageQueueOptions.VisibilityTimeout, cancellationToken).ConfigureAwait(false);
 
                 if (messages == null || messages.Value.Length == 0)
                 {
@@ -186,36 +163,25 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
                 {
                     var acknowledgementToken = new AcknowledgementToken(message.MessageId, message.MessageText, message.PopReceipt);
 
-                    if (_acknowledgementTokens.Remove(acknowledgementToken.MessageId))
-                    {
-                        await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[receive/refreshed]", acknowledgementToken.MessageId), cancellationToken);
-                    }
-
                     _acknowledgementTokens.Add(acknowledgementToken.MessageId, acknowledgementToken);
 
                     _receivedMessages.Enqueue(new(new MemoryStream(Convert.FromBase64String(message.MessageText)), acknowledgementToken));
                 }
             }
 
-            var receivedMessage = _receivedMessages.Count > 0 ? _receivedMessages.Dequeue() : null;
-
-            if (receivedMessage != null)
-            {
-                await _hopperOptions.MessageReceived.InvokeAsync(new(this, receivedMessage), cancellationToken);
-            }
-
-            return receivedMessage;
-        }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[receive/cancelled]"), cancellationToken);
+            receivedMessage = _receivedMessages.Count > 0 ? _receivedMessages.Dequeue() : null;
         }
         finally
         {
             _lock.Release();
         }
 
-        return null;
+        if (receivedMessage != null)
+        {
+            await _hopperOptions.MessageReceived.InvokeAsync(new(this, receivedMessage), cancellationToken);
+        }
+
+        return receivedMessage;
     }
 
     public async Task ReleaseAsync(object acknowledgementToken, CancellationToken cancellationToken = default)
@@ -231,17 +197,13 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             await _queueClient.SendMessageAsync(data.MessageText, cancellationToken).ConfigureAwait(false);
             await _queueClient.DeleteMessageAsync(data.MessageId, data.PopReceipt, cancellationToken).ConfigureAwait(false);
-
-            await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[release/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
+
+        await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
 
         _acknowledgementTokens.Remove(data.MessageId);
     }
@@ -251,27 +213,23 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public async Task AcknowledgeAsync(object acknowledgementToken, CancellationToken cancellationToken = default)
     {
-        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
         if (Guard.AgainstNull(acknowledgementToken) is not AcknowledgementToken data)
         {
             return;
         }
 
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
         try
         {
             await _queueClient.DeleteMessageAsync(data.MessageId, data.PopReceipt, cancellationToken).ConfigureAwait(false);
-
-            await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[acknowledge/cancelled]"), cancellationToken);
         }
         finally
         {
             _lock.Release();
         }
+
+        await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
 
         _acknowledgementTokens.Remove(data.MessageId);
     }
@@ -286,10 +244,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         try
         {
             await _queueClient.SendMessageAsync(Convert.ToBase64String(await stream.ToBytesAsync().ConfigureAwait(false)), null, _infiniteTimeToLive, cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[send/cancelled]"), cancellationToken);
         }
         finally
         {
