@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
-    <PackageReference Include="Shuttle.Hopper" Version="21.0.0" />
+    <PackageReference Include="Shuttle.Hopper" Version="21.0.0-alpha" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +35,7 @@
 
   <PropertyGroup>
     <Description>Azure Storage Queue implementation for use with Shuttle.Hopper.</Description>
-    <Version>21.0.0</Version>
+    <Version>21.0.0-alpha</Version>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/Shuttle/Shuttle.Hopper.AzureStorageQueues.git</RepositoryUrl>
     <PackageTags>azure azurestoragequeue azurequeue azuremq</PackageTags>
