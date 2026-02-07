@@ -1,7 +1,9 @@
 # Azure Storage Queues
 
-```
-PM> Install-Package Shuttle.Hopper.AzureStorageQueues
+## Installation
+
+```bash
+dotnet add package Shuttle.Hopper.AzureStorageQueues
 ```
 
 In order to make use of the `AzureStorageQueue` you will need access to an Azure Storage account or use the [Azurite](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azurite) emulator for local Azure Storage development.
@@ -12,31 +14,25 @@ You may want to take a look at how to [get started with Azure Queue storage usin
 
 The URI structure is `azuresq://configuration-name/queue-name`.
 
-If `ConnectionString` is specified the `StorageAccount` setting will be ignored.  Well `StorageAccount` is specified the `DefaultAzureCredential` will be used to authenticate.
+If `ConnectionString` is specified the `StorageAccount` setting will be ignored.  When `StorageAccount` is specified the `DefaultAzureCredential` will be used to authenticate.
 
 ```c#
-services.AddAzureStorageQueues(builder =>
+services.AddHopper(hopperBuilder =>
 {
-    var azureStorageQueueOptions = new AzureStorageQueueOptions
+    hopperBuilder.UseAzureStorageQueues(builder =>
     {
-        StorageAccount = "devstoreaccount1",
-        ConnectionString = "UseDevelopmentStorage=true",
-        MaxMessages = 20,
-        VisibilityTimeout = null
-    };
+        var azureStorageQueueOptions = new AzureStorageQueueOptions
+        {
+            StorageAccount = "devstoreaccount1",
+            ConnectionString = "UseDevelopmentStorage=true",
+            MaxMessages = 20,
+            VisibilityTimeout = null
+        };
 
-    azureStorageQueueOptions.Configure += (eventArgs, cancellationToken) =>
-    {
-        Console.WriteLine($@"[event] : Configure / Uri = '{eventArgs.TransportUri.Uri}'");
-
-        return Task.CompletedTask;
-    };
-
-    builder.AddOptions("azure", azureStorageQueueOptions);
+        builder.AddOptions("azure", azureStorageQueueOptions);
+    });
 });
 ```
-
-The `Configure` event `args` arugment exposes the `QueueClientOptions` directly for any specific options that need to be set.
 
 The default JSON settings structure is as follows:
 
@@ -59,7 +55,8 @@ The default JSON settings structure is as follows:
 
 | Segment / Argument | Default | Description |
 | --- | --- | --- | 
-| `StorageAccount` | | The name of the storage. |
+| `StorageAccount` | | The name of the storage account. |
 | `ConnectionString` | | The Azure Storage Queue endpoint to connect to. |
-| `MaxMessages` | `32` | Specifies the number of messages to fetch from the queue. |
-| `VisibilityTimeout` | `null` | | The message visibility timeout that will be used for messages that fail processing. |
+| `MaxMessages` | `32` | Specifies the number of messages to fetch from the queue (between 1 and 32). |
+| `VisibilityTimeout` | `null` | The message visibility timeout that will be used for messages that fail processing. |
+| `QueueClient` | `null` | A `QueueClientOptions` instance for specific client configuration. |
