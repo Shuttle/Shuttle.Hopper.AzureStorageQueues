@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
-    <PackageReference Include="Shuttle.Hopper" Version="21.0.1-beta" />
+    <PackageReference Include="Shuttle.Hopper" Version="21.0.1-rc1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +35,7 @@
 
   <PropertyGroup>
     <Description>Azure Storage Queue implementation for use with Shuttle.Hopper.</Description>
-    <Version>21.0.1-beta</Version>
+    <Version>21.0.1-rc1</Version>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/Shuttle/Shuttle.Hopper.AzureStorageQueues.git</RepositoryUrl>
     <PackageTags>azure azurestoragequeue azurequeue azuremq</PackageTags>
@@ -59,12 +59,10 @@
   </ItemGroup>
 
   <Target Name="CopyNuGetPackage" AfterTargets="Pack" Condition="'$(NUGET_PACKAGE_FOLDER)' != ''">
-    <Message Text="Removing cached NuGet package '$(USERPROFILE)\.nuget\packages\$(AssemblyName)\$(Version)'..."
-             Importance="high" />
+    <Message Text="Removing cached NuGet package '$(USERPROFILE)\.nuget\packages\$(AssemblyName)\$(Version)'..." Importance="high" />
     <RemoveDir Directories="$(USERPROFILE)\.nuget\packages\$(AssemblyName)\$(Version)" />
     <Message Text="Copying NuGet package to '$(NUGET_PACKAGE_FOLDER)'..." Importance="high" />
-    <Copy SourceFiles="bin\$(Configuration)\$(AssemblyName).$(Version).nupkg"
-          DestinationFolder="$(NUGET_PACKAGE_FOLDER)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="bin\$(Configuration)\$(AssemblyName).$(Version).nupkg" DestinationFolder="$(NUGET_PACKAGE_FOLDER)" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>
