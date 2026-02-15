@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
-public class AzureStorageQueueFactory(IOptions<HopperOptions> hopperOptions, IOptionsMonitor<AzureStorageQueueOptions> azureStorageQueueOptions)
+public class AzureStorageQueueFactory(IOptions<HopperOptions> hopperOptions, IOptionsMonitor<AzureStorageQueueOptions> azureStorageQueueOptions, ILogger<AzureStorageQueue>? logger = null)
     : ITransportFactory
 {
     private readonly IOptionsMonitor<AzureStorageQueueOptions> _azureStorageQueueOptions = Guard.AgainstNull(azureStorageQueueOptions);
@@ -19,7 +20,7 @@ public class AzureStorageQueueFactory(IOptions<HopperOptions> hopperOptions, IOp
             throw new InvalidOperationException(string.Format(Hopper.Resources.TransportConfigurationNameException, transportUri.ConfigurationName));
         }
 
-        return Task.FromResult<ITransport>(new AzureStorageQueue(_hopperOptions, azureStorageQueueOptions, transportUri));
+        return Task.FromResult<ITransport>(new AzureStorageQueue(_hopperOptions, azureStorageQueueOptions, transportUri, logger));
     }
 
     public string Scheme => "azuresq";

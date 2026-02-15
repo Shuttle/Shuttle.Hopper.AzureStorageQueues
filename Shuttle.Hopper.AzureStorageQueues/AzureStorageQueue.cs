@@ -2,8 +2,11 @@
 using Azure.Identity;
 using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shuttle.Core.Contract;
 using Shuttle.Core.Streams;
+using Shuttle.Hopper;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
@@ -18,9 +21,11 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
     private readonly QueueClient _queueClient;
     private readonly Queue<ReceivedMessage> _receivedMessages = new();
     private readonly HopperOptions _hopperOptions;
+    private readonly ILogger<AzureStorageQueue> _logger;
 
-    public AzureStorageQueue(HopperOptions hopperOptions, AzureStorageQueueOptions azureStorageQueueOptions, TransportUri uri)
+    public AzureStorageQueue(HopperOptions hopperOptions, AzureStorageQueueOptions azureStorageQueueOptions, TransportUri uri, ILogger<AzureStorageQueue>? logger = null)
     {
+        _logger = logger ?? NullLogger<AzureStorageQueue>.Instance;
         _hopperOptions = Guard.AgainstNull(hopperOptions);
         _azureStorageQueueOptions = Guard.AgainstNull(azureStorageQueueOptions);
 
@@ -44,6 +49,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public async Task CreateAsync(CancellationToken cancellationToken = default)
     {
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[create/starting]");
+
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[create/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -56,12 +63,16 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             _lock.Release();
         }
+        
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[create/completed]");
 
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[create/completed]"), cancellationToken);
     }
 
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[delete/starting]");
+
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[delete/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -74,6 +85,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             _lock.Release();
         }
+
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[delete/completed]");
 
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[delete/completed]"), cancellationToken);
     }
@@ -104,6 +117,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public async Task PurgeAsync(CancellationToken cancellationToken = default)
     {
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[purge/starting]");
+
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[purge/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -117,11 +132,15 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
             _lock.Release();
         }
 
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[purge/completed]");
+
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[purge/completed]"), cancellationToken);
     }
 
     public async ValueTask<bool> HasPendingAsync(CancellationToken cancellationToken = default)
     {
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[has-pending/starting]");
+
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending/starting]"), cancellationToken);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -136,6 +155,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             _lock.Release();
         }
+
+        LogMessage.Operation(_logger, Uri.Uri.Scheme, Uri.TransportName, "[has-pending]");
 
         await _hopperOptions.TransportOperation.InvokeAsync(new(this, "[has-pending]", result), cancellationToken);
 
@@ -178,6 +199,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         if (receivedMessage != null)
         {
+            LogMessage.MessageReceived(_logger, Uri.Uri.Scheme, Uri.TransportName);
+
             await _hopperOptions.MessageReceived.InvokeAsync(new(this, receivedMessage), cancellationToken);
         }
 
@@ -202,6 +225,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             _lock.Release();
         }
+
+        LogMessage.MessageReleased(_logger, Uri.Uri.Scheme, Uri.TransportName);
 
         await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
 
@@ -229,6 +254,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
             _lock.Release();
         }
 
+        LogMessage.MessageAcknowledged(_logger, Uri.Uri.Scheme, Uri.TransportName);
+
         await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
 
         _acknowledgementTokens.Remove(data.MessageId);
@@ -249,6 +276,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             _lock.Release();
         }
+
+        LogMessage.MessageEnqueued(_logger, Uri.Uri.Scheme, Uri.TransportName, transportMessage.MessageType, transportMessage.MessageId);
 
         await _hopperOptions.MessageSent.InvokeAsync(new(this, transportMessage, stream), cancellationToken);
     }
