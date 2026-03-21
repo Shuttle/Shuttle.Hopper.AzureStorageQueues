@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shuttle.Core.Contract;
 using Shuttle.Core.Streams;
-using Shuttle.Hopper;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
