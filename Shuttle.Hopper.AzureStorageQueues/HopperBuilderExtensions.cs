@@ -11,7 +11,7 @@ public static class HopperBuilderExtensions
         {
             var services = hopperBuilder.Services;
 
-            var azureStorageQueueBuilder = new AzureStorageQueueBuilder(services);
+            var azureStorageQueueBuilder = new AzureStorageQueueBuilder();
 
             builder?.Invoke(azureStorageQueueBuilder);
 
@@ -21,12 +21,8 @@ public static class HopperBuilderExtensions
             {
                 services.AddOptions<AzureStorageQueueOptions>(pair.Key).Configure(options =>
                 {
-                    options.QueueClient = pair.Value.QueueClient;
-                    options.StorageAccount = pair.Value.StorageAccount;
-                    options.ConnectionString = pair.Value.ConnectionString;
-                    options.VisibilityTimeout = pair.Value.VisibilityTimeout;
-                    options.MaxMessages = pair.Value.MaxMessages;
-                    
+                    pair.Value(options);
+
                     if (options.MaxMessages < 1)
                     {
                         options.MaxMessages = 1;
