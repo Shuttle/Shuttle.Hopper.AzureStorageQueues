@@ -2,17 +2,17 @@
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
-public class AzureStorageQueueBuilder()
+public class AzureStorageQueueBuilder
 {
-    internal readonly Dictionary<string, Action<AzureStorageQueueOptions>> AzureStorageQueueOptions = new();
+    internal readonly Dictionary<string, Action<AzureStorageQueueOptions>> AzureStorageQueueConfigureOptions = new();
 
-    public AzureStorageQueueBuilder Configure(string name, Action<AzureStorageQueueOptions> configure)
+    public AzureStorageQueueBuilder Configure(string name, Action<AzureStorageQueueOptions> configureOptions)
     {
         Guard.AgainstEmpty(name);
-        Guard.AgainstNull(configure);
+        Guard.AgainstNull(configureOptions);
 
-        AzureStorageQueueOptions.Remove(name);
-        AzureStorageQueueOptions.Add(name, configure);
+        AzureStorageQueueConfigureOptions.Remove(name);
+        AzureStorageQueueConfigureOptions.Add(name, configureOptions);
 
         return this;
     }

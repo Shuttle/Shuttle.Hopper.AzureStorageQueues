@@ -17,7 +17,7 @@ public static class HopperBuilderExtensions
 
             services.AddSingleton<IValidateOptions<AzureStorageQueueOptions>, AzureStorageQueueOptionsValidator>();
 
-            foreach (var pair in azureStorageQueueBuilder.AzureStorageQueueOptions)
+            foreach (var pair in azureStorageQueueBuilder.AzureStorageQueueConfigureOptions)
             {
                 services.AddOptions<AzureStorageQueueOptions>(pair.Key).Configure(options =>
                 {
