@@ -5,6 +5,7 @@ using Azure.Storage.Queues.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shuttle.Core.Contract;
+using Shuttle.Core.Pipelines;
 using Shuttle.Core.Streams;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
@@ -260,10 +261,11 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         _acknowledgementTokens.Remove(data.MessageId);
     }
 
-    public async Task SendAsync(TransportMessage transportMessage, Stream stream, CancellationToken cancellationToken = default)
+    public async Task SendAsync(Stream stream, IState state, CancellationToken cancellationToken = default)
     {
-        Guard.AgainstNull(transportMessage);
         Guard.AgainstNull(stream);
+
+        var transportMessage = Guard.AgainstNull(state.GetTransportMessage());
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
