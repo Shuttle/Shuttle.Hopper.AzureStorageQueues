@@ -1,19 +1,16 @@
-﻿using Shuttle.Contract;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Shuttle.Contract;
 
 namespace Shuttle.Hopper.AzureStorageQueues;
 
-public class AzureStorageQueueBuilder
+public class AzureStorageQueueBuilder(IServiceCollection services)
 {
-    internal readonly Dictionary<string, Action<AzureStorageQueueOptions>> AzureStorageQueueConfigureOptions = new();
-
     public AzureStorageQueueBuilder Configure(string name, Action<AzureStorageQueueOptions> configureOptions)
     {
-        Guard.AgainstEmpty(name);
-        Guard.AgainstNull(configureOptions);
-
-        AzureStorageQueueConfigureOptions.Remove(name);
-        AzureStorageQueueConfigureOptions.Add(name, configureOptions);
-
+        Guard.AgainstNull(services)
+            .AddOptions<AzureStorageQueueOptions>(Guard.AgainstEmpty(name))
+            .Configure(Guard.AgainstNull(configureOptions));
+        
         return this;
     }
 }

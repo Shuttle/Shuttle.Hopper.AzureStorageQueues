@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -35,7 +35,7 @@
 
   <PropertyGroup>
     <Description>Azure Storage Queue implementation for use with Shuttle.Hopper.</Description>
-    <Version>21.0.1-rc3</Version>
+    <Version>21.0.1-rc4</Version>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/Shuttle/Shuttle.Hopper.AzureStorageQueues.git</RepositoryUrl>
     <PackageTags>azure azurestoragequeue azurequeue azuremq</PackageTags>
