@@ -14,24 +14,20 @@ You may want to take a look at how to [get started with Azure Queue storage usin
 
 The URI structure is `azuresq://configuration-name/queue-name`.
 
-If `ConnectionString` is specified the `StorageAccount` setting will be ignored.  When `StorageAccount` is specified the `DefaultAzureCredential` will be used to authenticate.
+If the `StorageAccount` is not specified then the `ConnectionString` will be used. At least one of the two is required.  When `StorageAccount` is specified the `DefaultAzureCredential` will be used to authenticate.
 
 ```c#
-services.AddHopper(hopperBuilder =>
-{
-    hopperBuilder.UseAzureStorageQueues(builder =>
+services.AddHopper()
+    .UseAzureStorageQueues(builder =>
     {
-        var azureStorageQueueOptions = new AzureStorageQueueOptions
+        builder.Configure("azure", options =>
         {
-            StorageAccount = "devstoreaccount1",
-            ConnectionString = "UseDevelopmentStorage=true",
-            MaxMessages = 20,
-            VisibilityTimeout = null
-        };
-
-        builder.AddOptions("azure", azureStorageQueueOptions);
+            options.StorageAccount = "devstoreaccount1";
+            options.ConnectionString = "UseDevelopmentStorage=true";
+            options.MaxMessages = 20;
+            options.VisibilityTimeout = null;
+        });
     });
-});
 ```
 
 The default JSON settings structure is as follows:
@@ -51,7 +47,7 @@ The default JSON settings structure is as follows:
 }
 ```
 
-## Options
+## `AzureStorageQueueOptions`
 
 | Segment / Argument | Default | Description |
 | --- | --- | --- | 
