@@ -35,7 +35,7 @@
 
   <PropertyGroup>
     <Description>Azure Storage Queue implementation for use with Shuttle.Hopper.</Description>
-    <Version>21.0.2</Version>
+    <Version>21.0.3</Version>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/Shuttle/Shuttle.Hopper.AzureStorageQueues.git</RepositoryUrl>
     <PackageTags>azure azurestoragequeue azurequeue azuremq</PackageTags>

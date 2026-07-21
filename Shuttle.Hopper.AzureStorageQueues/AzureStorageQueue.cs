@@ -220,6 +220,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             await _queueClient.SendMessageAsync(data.MessageText, cancellationToken).ConfigureAwait(false);
             await _queueClient.DeleteMessageAsync(data.MessageId, data.PopReceipt, cancellationToken).ConfigureAwait(false);
+
+            _acknowledgementTokens.Remove(data.MessageId);
         }
         finally
         {
@@ -229,8 +231,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         LogMessage.MessageReleased(_logger, Uri.Uri.Scheme, Uri.TransportName);
 
         await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
-
-        _acknowledgementTokens.Remove(data.MessageId);
     }
 
     public TransportUri Uri { get; }
@@ -248,6 +248,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         try
         {
             await _queueClient.DeleteMessageAsync(data.MessageId, data.PopReceipt, cancellationToken).ConfigureAwait(false);
+
+            _acknowledgementTokens.Remove(data.MessageId);
         }
         finally
         {
@@ -257,8 +259,6 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         LogMessage.MessageAcknowledged(_logger, Uri.Uri.Scheme, Uri.TransportName);
 
         await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
-
-        _acknowledgementTokens.Remove(data.MessageId);
     }
 
     public async Task SendAsync(Stream stream, IState state, CancellationToken cancellationToken = default)
