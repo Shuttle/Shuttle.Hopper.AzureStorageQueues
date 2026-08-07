@@ -23,6 +23,10 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
     private readonly HopperOptions _hopperOptions;
     private readonly ILogger<AzureStorageQueue> _logger;
 
+    // matches the Azure Storage Queues service default applied when no visibility timeout is specified
+    private readonly TimeSpan _visibilityTimeout;
+    private readonly Timer _visibilityTimeoutRenewalTimer;
+
     public AzureStorageQueue(HopperOptions hopperOptions, AzureStorageQueueOptions azureStorageQueueOptions, TransportUri uri, ILogger<AzureStorageQueue>? logger = null)
     {
         _logger = logger ?? NullLogger<AzureStorageQueue>.Instance;
@@ -45,6 +49,17 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             throw new InvalidOperationException(string.Format(Resources.QueueUriException, uri.ConfigurationName));
         }
+
+        _visibilityTimeout = _azureStorageQueueOptions.VisibilityTimeout ?? TimeSpan.FromSeconds(30);
+
+        var renewalInterval = TimeSpan.FromTicks(_visibilityTimeout.Ticks / 2);
+
+        if (renewalInterval < TimeSpan.FromSeconds(1))
+        {
+            renewalInterval = TimeSpan.FromSeconds(1);
+        }
+
+        _visibilityTimeoutRenewalTimer = new(OnVisibilityTimeoutRenewalTimer, null, renewalInterval, renewalInterval);
     }
 
     public async Task CreateAsync(CancellationToken cancellationToken = default)
@@ -93,6 +108,8 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public void Dispose()
     {
+        _visibilityTimeoutRenewalTimer.Dispose();
+
         _lock.Wait(CancellationToken.None);
 
         try
@@ -173,7 +190,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             if (_receivedMessages.Count == 0)
             {
-                Response<QueueMessage[]>? messages = await _queueClient.ReceiveMessagesAsync(_azureStorageQueueOptions.MaxMessages, _azureStorageQueueOptions.VisibilityTimeout, cancellationToken).ConfigureAwait(false);
+                Response<QueueMessage[]>? messages = await _queueClient.ReceiveMessagesAsync(_azureStorageQueueOptions.MaxMessages, _visibilityTimeout, cancellationToken).ConfigureAwait(false);
 
                 if (messages == null || messages.Value.Length == 0)
                 {
@@ -286,10 +303,44 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
     public TransportType Type => TransportType.Queue;
 
+    private void OnVisibilityTimeoutRenewalTimer(object? state)
+    {
+        _ = RenewVisibilityTimeoutsAsync();
+    }
+
+    private async Task RenewVisibilityTimeoutsAsync()
+    {
+        if (!await _lock.WaitAsync(0).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var acknowledgementToken in _acknowledgementTokens.Values)
+            {
+                try
+                {
+                    var response = await _queueClient.UpdateMessageAsync(acknowledgementToken.MessageId, acknowledgementToken.PopReceipt, visibilityTimeout: _visibilityTimeout, cancellationToken: CancellationToken.None).ConfigureAwait(false);
+
+                    acknowledgementToken.PopReceipt = response.Value.PopReceipt;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to renew the visibility timeout for message '{MessageId}' on transport '{TransportName}' ({Scheme}).", acknowledgementToken.MessageId, Uri.TransportName, Uri.Uri.Scheme);
+                }
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     internal class AcknowledgementToken(string messageId, string messageText, string popReceipt)
     {
         public string MessageId { get; } = messageId;
         public string MessageText { get; } = messageText;
-        public string PopReceipt { get; } = popReceipt;
+        public string PopReceipt { get; set; } = popReceipt;
     }
 }
