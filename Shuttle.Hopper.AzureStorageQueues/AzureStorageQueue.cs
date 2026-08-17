@@ -180,7 +180,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         return result;
     }
 
-    public async Task<ReceivedMessage?> ReceiveAsync(CancellationToken cancellationToken = default)
+    public async Task<ReceivedMessage?> ReceiveAsync(IPipeline pipeline, CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -218,13 +218,13 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         {
             LogMessage.MessageReceived(_logger, Uri.Uri.Scheme, Uri.TransportName);
 
-            await _hopperOptions.MessageReceived.InvokeAsync(new(this, receivedMessage), cancellationToken);
+            await _hopperOptions.MessageReceived.InvokeAsync(new(this, receivedMessage, pipeline), cancellationToken);
         }
 
         return receivedMessage;
     }
 
-    public async Task ReleaseAsync(object acknowledgementToken, CancellationToken cancellationToken = default)
+    public async Task ReleaseAsync(object acknowledgementToken, IPipeline pipeline, CancellationToken cancellationToken = default)
     {
         if (Guard.AgainstNull(acknowledgementToken) is not AcknowledgementToken data)
         {
@@ -247,13 +247,13 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         LogMessage.MessageReleased(_logger, Uri.Uri.Scheme, Uri.TransportName);
 
-        await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
+        await _hopperOptions.MessageReleased.InvokeAsync(new(this, acknowledgementToken, pipeline), cancellationToken);
     }
 
     public TransportUri Uri { get; }
 
 
-    public async Task AcknowledgeAsync(object acknowledgementToken, CancellationToken cancellationToken = default)
+    public async Task AcknowledgeAsync(object acknowledgementToken, IPipeline pipeline, CancellationToken cancellationToken = default)
     {
         if (Guard.AgainstNull(acknowledgementToken) is not AcknowledgementToken data)
         {
@@ -275,15 +275,15 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         LogMessage.MessageAcknowledged(_logger, Uri.Uri.Scheme, Uri.TransportName);
 
-        await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken), cancellationToken);
+        await _hopperOptions.MessageAcknowledged.InvokeAsync(new(this, acknowledgementToken, pipeline), cancellationToken);
     }
 
-    public async Task SendAsync(Stream stream, IState state, CancellationToken cancellationToken = default)
+    public async Task SendAsync(Stream stream, IPipeline pipeline, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(pipeline);
 
-        var transportMessage = Guard.AgainstNull(state.GetTransportMessage());
+        var transportMessage = Guard.AgainstNull(pipeline.State.GetTransportMessage());
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -298,7 +298,7 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
 
         LogMessage.MessageEnqueued(_logger, Uri.Uri.Scheme, Uri.TransportName, transportMessage.MessageType, transportMessage.MessageId);
 
-        await _hopperOptions.MessageSent.InvokeAsync(new(this, transportMessage, stream), cancellationToken);
+        await _hopperOptions.MessageSent.InvokeAsync(new(this, stream, pipeline), cancellationToken);
     }
 
     public TransportType Type => TransportType.Queue;
@@ -342,5 +342,10 @@ public class AzureStorageQueue : ITransport, ICreateTransport, IDeleteTransport,
         public string MessageId { get; } = messageId;
         public string MessageText { get; } = messageText;
         public string PopReceipt { get; set; } = popReceipt;
+
+        public override string ToString()
+        {
+            return $"Message id '{MessageId}' with pop receipt '{PopReceipt}'.";
+        }
     }
 }
